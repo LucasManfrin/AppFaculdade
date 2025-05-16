@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+"use client"
+
+import { useState } from "react"
 import {
   StyleSheet,
   View,
@@ -11,36 +13,46 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-} from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import {
-  widthPercentageToDP as wp,
-  heightPercentageToDP as hp,
-} from "react-native-responsive-screen";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../../../App";
-import { Ionicons } from "@expo/vector-icons";
+} from "react-native"
+import { useNavigation } from "@react-navigation/native"
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
+import { Ionicons } from "@expo/vector-icons"
+import { widthPercentageToDP as wp } from "react-native-responsive-screen"
+import type { RootStackParamList } from "../../../../App" // Verifique o caminho correto do seu arquivo
+import { auth } from "../../../../firebaseConfig"
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
-type LoginScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  "Login"
->;
+// Tipagem da navegação
+type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, "Login">
 
 const LoginScreen = () => {
-  const navigation = useNavigation<LoginScreenNavigationProp>();
-  const [senha, setSenha] = useState("");
-  const [email, setEmail] = useState("");
-  const [senhaVisivel, setSenhaVisivel] = useState(false);
-  const [showError, setShowError] = useState(false);
+  const navigation = useNavigation<LoginScreenNavigationProp>()
+  const [senha, setSenha] = useState("")
+  const [email, setEmail] = useState("")
+  const [senhaVisivel, setSenhaVisivel] = useState(false)
+  const [showError, setShowError] = useState(false)
 
-  const validateLogin = () => {
+  // Função de login
+  const handleLogin = () => {
     if (email.trim() === "" || senha.trim() === "") {
-      setShowError(true);
-    } else {
-      setShowError(false);
-      navigation.navigate("Navigate");
+      setShowError(true)
+      return
     }
-  };
+
+    setShowError(false)
+
+    // Autenticação com Firebase
+    signInWithEmailAndPassword(auth, email, senha)
+      .then(() => {
+        // Se o login for bem-sucedido, navega para a tela "Navigate"
+        navigation.navigate("Navigate")
+      })
+      .catch((error) => {
+        // Mostra erro se o login falhar
+        setShowError(true)
+        console.error("Erro ao fazer login: ", error.message)
+      })
+  }
 
   return (
     <KeyboardAvoidingView
@@ -50,7 +62,6 @@ const LoginScreen = () => {
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.container}>
-          
           <ScrollView
             contentContainerStyle={{ flexGrow: 1, alignItems: "center" }}
             keyboardShouldPersistTaps="handled"
@@ -83,26 +94,15 @@ const LoginScreen = () => {
                   onChangeText={setSenha}
                   secureTextEntry={!senhaVisivel}
                 />
-                <TouchableOpacity
-                  onPress={() => setSenhaVisivel(!senhaVisivel)}
-                >
-                  <Ionicons
-                    name={senhaVisivel ? "eye-off" : "eye"}
-                    size={22}
-                    color="grey"
-                  />
+                <TouchableOpacity onPress={() => setSenhaVisivel(!senhaVisivel)}>
+                  <Ionicons name={senhaVisivel ? "eye-off" : "eye"} size={22} color="grey" />
                 </TouchableOpacity>
               </View>
             </View>
 
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
               <TouchableOpacity>
-                <Text
-                  style={styles.registerStyle}
-                  onPress={() => navigation.navigate("Avatar")}
-                >
+                <Text style={styles.registerStyle} onPress={() => navigation.navigate("Avatar")}>
                   Primeiro Login? Clique aqui
                 </Text>
               </TouchableOpacity>
@@ -112,13 +112,11 @@ const LoginScreen = () => {
               </TouchableOpacity>
             </View>
 
-            {showError && (
-              <Text style={styles.error}>Preencha todos os campos!</Text>
-            )}
+            {showError && <Text style={styles.error}>E-mail ou senha incorretos!</Text>}
 
             <TouchableOpacity
               style={styles.startButton}
-              onPress={validateLogin}
+              onPress={handleLogin} // Função de login ao pressionar o botão
             >
               <Text style={styles.buttonText}>Entrar</Text>
             </TouchableOpacity>
@@ -126,10 +124,10 @@ const LoginScreen = () => {
         </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
-  );
-};
+  )
+}
 
-export default LoginScreen;
+export default LoginScreen
 
 const styles = StyleSheet.create({
   container: {
@@ -146,7 +144,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: "#08443f",
     color: "grey",
-    width: wp('90%'),
+    width: wp("90%"),
     padding: 10,
     height: 45,
   },
@@ -158,7 +156,6 @@ const styles = StyleSheet.create({
   },
   startButton: {
     marginTop: 130,
-    
   },
   buttonText: {
     width: wp("85%"),
@@ -171,13 +168,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#fff",
   },
-  saudacao: {
-    color: "#fff",
-    marginTop: 30,
-    fontSize: 20,
-    fontWeight: "700",
-    textAlign: "center",
-  },
   imagem: {
     width: 330,
     height: 330,
@@ -189,7 +179,7 @@ const styles = StyleSheet.create({
     color: "grey",
     marginTop: 15,
     marginHorizontal: 30,
-    paddingBottom: 20
+    paddingBottom: 20,
   },
   senhaContainer: {
     flexDirection: "row",
@@ -210,6 +200,6 @@ const styles = StyleSheet.create({
     color: "red",
     alignSelf: "flex-start",
     marginLeft: 30,
-    fontSize: 13
+    fontSize: 13,
   },
-});
+})
