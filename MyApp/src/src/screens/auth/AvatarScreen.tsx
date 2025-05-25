@@ -9,8 +9,6 @@ import {
   Platform,
   StyleSheet,
   ScrollView,
-  TouchableWithoutFeedback,
-  Keyboard,
 } from 'react-native';
 import { useUser } from "../../../../userContext";
 import { useNavigation } from '@react-navigation/native';
@@ -21,6 +19,9 @@ import {
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { doc, setDoc, getDoc} from "firebase/firestore";
+import {auth, db} from "@/firebaseConfig"
+
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Avatar'>;
 
@@ -64,16 +65,43 @@ const AvatarScreen = () => {
     setCurrentIndex((next) => (next === avatars.length - 1 ? 0 : next + 1));
   };
 
-  const validateNickname = () => {
-    if (nickname.trim() === "") {
-      setShowError(true);
-    } else {
-      setShowError(false);
-      setAvatarUri(avatars[currentIndex].uri); // salvar avatar
-      setNicknameProvider(nickname); // salvar nickname
-      navigation.navigate("Welcome");
+  const validateNickname = async () => {
+  if (nickname.trim() === "") {
+    setShowError(true);
+    return;
+  }
+
+  setShowError(false);
+  const selectedAvatar = avatars[currentIndex].uri;
+  setAvatarUri(selectedAvatar);
+  setNicknameProvider(nickname);
+
+  try {
+    const userId = auth.currentUser?.uid;
+    if (!userId) {
+      console.error("Usuário não autenticado.");
+      return;
     }
-  };
+
+    const userRef = doc(db, "users", userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      // Se não existir, salva o nickname e avatar
+      await setDoc(userRef, {
+        nickname: nickname,
+        avatar: selectedAvatar,
+      });
+      console.log("Usuário salvo com sucesso.");
+    } else {
+      console.log("Usuário já tem nickname e avatar salvos.");
+    }
+
+    navigation.navigate("Welcome");
+  } catch (error) {
+    console.error("Erro ao acessar ou salvar no Firestore:", error);
+  }
+};
 
   return (
     // faz com que a tela acompanhe o teclado a subir
@@ -92,12 +120,6 @@ const AvatarScreen = () => {
           >
             <Ionicons name="arrow-back" size={24} color="black" />
           </TouchableOpacity>
-
-          <Text style={styles.loginAdvice}>
-            Obs: Esta tela é apenas para o primeiro acesso ao quiz! Caso já a
-            tenha utilizado retorne e faça login com o email e senha que te
-            forneceram.
-          </Text>
 
           <Text style={styles.text}>Escolha um Avatar!</Text>
 

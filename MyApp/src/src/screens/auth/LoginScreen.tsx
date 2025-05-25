@@ -18,9 +18,10 @@ import { useNavigation } from "@react-navigation/native"
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import { Ionicons } from "@expo/vector-icons"
 import { widthPercentageToDP as wp } from "react-native-responsive-screen"
-import type { RootStackParamList } from "../../../../App" // Verifique o caminho correto do seu arquivo
-import { auth } from "../../../../firebaseConfig"
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import type { RootStackParamList } from "../../../../App"
+import { auth, db } from "../../../../firebaseConfig"
+import { signInWithEmailAndPassword } from 'firebase/auth'
+import { doc, getDoc, setDoc } from "firebase/firestore"
 
 // Tipagem da navegação
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, "Login">
@@ -33,7 +34,7 @@ const LoginScreen = () => {
   const [showError, setShowError] = useState(false)
 
   // Função de login
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (email.trim() === "" || senha.trim() === "") {
       setShowError(true)
       return
@@ -41,17 +42,30 @@ const LoginScreen = () => {
 
     setShowError(false)
 
-    // Autenticação com Firebase
-    signInWithEmailAndPassword(auth, email, senha)
-      .then(() => {
-        // Se o login for bem-sucedido, navega para a tela "Navigate"
-        navigation.navigate("Navigate")
-      })
-      .catch((error) => {
-        // Mostra erro se o login falhar
-        setShowError(true)
-        console.error("Erro ao fazer login: ", error.message)
-      })
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, senha)
+      const uid = userCredential.user.uid
+
+      const userRef = doc(db, "users", uid)
+      const docSnap = await getDoc(userRef)
+
+      if (docSnap.exists()) {
+        const userData = docSnap.data()
+        if (userData.nickname && userData.avatar) {
+          console.log("Usuário já tem nickname e avatar salvos.")
+          navigation.replace("Welcome")
+        } else {
+          console.log("Nickname ou avatar não preenchidos. Redirecionando...")
+          navigation.replace("Avatar")
+        }
+      } else {
+        console.log("Documento não existe. Redirecionando...")
+        navigation.replace("Avatar")
+      }
+    } catch (error) {
+      console.error("Erro ao fazer login:", error)
+      setShowError(true)
+    }
   }
 
   return (
@@ -68,9 +82,7 @@ const LoginScreen = () => {
             contentInsetAdjustmentBehavior="automatic"
           >
             <Image
-              source={{
-                uri: "https://i.postimg.cc/Nj9vjTFL/Whats-App-Image-2025-04-05-at-12-24-57-4.png",
-              }}
+              source={{ uri: "https://i.postimg.cc/Nj9vjTFL/Whats-App-Image-2025-04-05-at-12-24-57-4.png" }}
               style={styles.imagem}
             />
 
@@ -100,13 +112,7 @@ const LoginScreen = () => {
               </View>
             </View>
 
-            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-              <TouchableOpacity>
-                <Text style={styles.registerStyle} onPress={() => navigation.navigate("Avatar")}>
-                  Primeiro Login? Clique aqui
-                </Text>
-              </TouchableOpacity>
-
+            <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
               <TouchableOpacity>
                 <Text style={styles.registerStyle}>Esqueceu a senha?</Text>
               </TouchableOpacity>
@@ -114,10 +120,7 @@ const LoginScreen = () => {
 
             {showError && <Text style={styles.error}>E-mail ou senha incorretos!</Text>}
 
-            <TouchableOpacity
-              style={styles.startButton}
-              onPress={handleLogin} // Função de login ao pressionar o botão
-            >
+            <TouchableOpacity style={styles.startButton} onPress={handleLogin}>
               <Text style={styles.buttonText}>Entrar</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -190,7 +193,6 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     height: 45,
   },
-
   inputSenha: {
     flex: 1,
     color: "grey",
