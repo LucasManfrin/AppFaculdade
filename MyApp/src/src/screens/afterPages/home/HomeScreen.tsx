@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,115 +9,108 @@ import {
   ScrollView,
 } from "react-native";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
+import { db, auth } from "@/firebaseConfig"; // importa a instância do Firestore
 
+// Criação de um componente animado com o ícone de coroa
 const AnimatedIcon = Animated.createAnimatedComponent(FontAwesome5);
 
-    {/*-- Array comm informações de cada jogador (alterar o necessário e juntar com o back)--*/ }
-const rankingData = [
-  {
-    id: 1,
-    name: "João",
-    score: 60,
-    avatar: "https://i.postimg.cc/FHRCKxp4/user-1.png",
-  },
-  {
-    id: 2,
-    name: "Maria",
-    score: 40,
-    avatar: "https://i.postimg.cc/FHRCKxp4/user-1.png",
-  },
-  {
-    id: 3,
-    name: "Pedro",
-    score: 100,
-    avatar: "https://i.postimg.cc/FHRCKxp4/user-1.png",
-  },
-  {
-    id: 4,
-    name: "Ana",
-    score: 20,
-    avatar: "https://i.postimg.cc/FHRCKxp4/user-1.png",
-  },
-  {
-    id: 5,
-    name: "Lucas",
-    score: 50,
-    avatar: "https://i.postimg.cc/FHRCKxp4/user-1.png",
-  },
-  {
-    id: 6,
-    name: "Carla",
-    score: 20,
-    avatar: "https://i.postimg.cc/FHRCKxp4/user-1.png",
-  },
-  {
-    id: 7,
-    name: "Rafael",
-    score: 40,
-    avatar: "https://i.postimg.cc/FHRCKxp4/user-1.png",
-  },
-  {
-    id: 8,
-    name: "Joana",
-    score: 10,
-    avatar: "https://i.postimg.cc/FHRCKxp4/user-1.png",
-  },
-  {
-    id: 9,
-    name: "Maria",
-    score: 15,
-    avatar: "https://i.postimg.cc/FHRCKxp4/user-1.png",
-  },
-  {
-    id: 10,
-    name: "Antonio",
-    score: 14,
-    avatar: "https://i.postimg.cc/FHRCKxp4/user-1.png",
-  },
-  {
-    id: 11,
-    name: "Malu",
-    score: 5,
-    avatar: "https://i.postimg.cc/FHRCKxp4/user-1.png",
-  },
-];
-
 const HomeScreen = () => {
+  const [rankingData, setRankingData] = useState([]); // Estado com os dados dos jogadores
   const translateY1 = useRef(new Animated.Value(0)).current;
   const translateY2 = useRef(new Animated.Value(0)).current;
   const translateY3 = useRef(new Animated.Value(0)).current;
+  const [currentUserId, setCurrentUserId] = useState(null);
+
+  // Função de animação flutuante para os 3 primeiros colocados
+  const createFloatingAnimation = (
+    animatedValue: Animated.Value,
+    delay: number
+  ) => {
+    return Animated.loop(
+      Animated.sequence([
+        Animated.timing(animatedValue, {
+          toValue: -15,
+          duration: 800,
+          delay,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animatedValue, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+  };
+
+useEffect(() => {
+  const unsubscribe = auth.onAuthStateChanged((user) => {
+    if (user) {
+      setCurrentUserId(user.uid);
+    }
+  });
+
+  // Inicia animações
+  createFloatingAnimation(translateY1, 0).start();
+  createFloatingAnimation(translateY2, 300).start();
+  createFloatingAnimation(translateY3, 600).start();
+
+  return () => {
+    unsubscribe();
+    translateY1.stopAnimation();
+    translateY2.stopAnimation();
+    translateY3.stopAnimation();
+  };
+}, []);
+
 
   useEffect(() => {
-    const createFloatingAnimation = (
-      animatedValue: Animated.Value,
-      delay: number
-    ) => {
-      return Animated.loop(
-        Animated.sequence([
-          Animated.timing(animatedValue, {
-            toValue: -15,
-            duration: 800,
-            delay,
-            useNativeDriver: true,
-          }),
-          Animated.timing(animatedValue, {
-            toValue: 0,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-    };
+    // Busca os resultados 'melhor' de todos os usuários
+    const fetchRanking = async () => {
+    try {
+      const usersSnap = await getDocs(collection(db, "users"));
+      let allUsuarios = [];
 
-    createFloatingAnimation(translateY1, 0).start();
-    createFloatingAnimation(translateY2, 300).start();
-    createFloatingAnimation(translateY3, 600).start();
+      for (const userDoc of usersSnap.docs) {
+        const userId = userDoc.id;
+        const userData = userDoc.data();
 
-    return () => {
-      translateY1.stopAnimation();
-      translateY2.stopAnimation();
-      translateY3.stopAnimation();
-    };
+        const melhorRef = doc(db, "users", userId, "resultados", "melhor");
+        const melhorSnap = await getDoc(melhorRef);
+
+        let score = 0;
+        let tempo = 9999;
+
+        if (melhorSnap.exists()) {
+          const melhorData = melhorSnap.data();
+          score = melhorData.acertos || 0;
+          tempo = melhorData.tempo || 9999;
+        }
+
+        allUsuarios.push({
+          id: userId,
+          name: userData.nickname || "Anônimo",
+          score,
+          tempo,
+          avatar: userData.avatar || "https://i.postimg.cc/FHRCKxp4/user-1.png",
+        });
+      }
+
+    // Ordenar por score, depois por tempo
+    const sorted = allUsuarios.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.tempo - b.tempo;
+    });
+
+    setRankingData(sorted);
+    console.log("Ranking carregado com todos os usuários:", sorted);
+  } catch (error) {
+    console.error("Erro ao buscar ranking:", error);
+  }
+};
+
+    fetchRanking(); // Executa a função ao montar o componente
   }, []);
 
   return (
@@ -128,82 +121,107 @@ const HomeScreen = () => {
       }}
     >
       <ScrollView>
+        {/* Top 3 colocados com animação */}
         <View style={styles.imageContainer}>
-          {[...rankingData]
-            .sort((a, b) => b.score - a.score) // essa função .sort faz com que ordene de maior a menor pontuação no ranking
-            .slice(0, 3)
-            .map((player, index) => {//.map e .slice faz com que apenas adicionando um novo player(objeto) na array rankingData, eles já apareçam aqui
-              let animatedStyle = {};
-              let borderColor = "";
-              let size = 70;
-              let numberStyle = {};
+          {rankingData.slice(0, 3).map((player, index) => {
+          const isCurrentUser = player.id === currentUserId;
 
-              if (index === 0) {
-                animatedStyle = { transform: [{ translateY: translateY1 }] };
-                borderColor = "#e5cb26";
-                size = 90;
-                numberStyle = styles.number1;
-              } else if (index === 1) {
-                animatedStyle = { transform: [{ translateY: translateY2 }] };
-                borderColor = "#125250";
-                size = 70;
-                numberStyle = styles.number2;
-              } else {
-                animatedStyle = { transform: [{ translateY: translateY3 }] };
-                borderColor = "#125250";
-                size = 70;
-                numberStyle = styles.number3;
-              }
+          let animatedStyle = {};
+          let borderColor = "";
+          let size = 70;
+          let numberStyle = {};
 
-              return (
-                <Animated.View key={player.id} style={animatedStyle}>
-                  {index === 0 && (
-                    <AnimatedIcon name="crown" size={18} style={styles.icon} />
-                  )}
-                  <Image
-                    style={{
-                      width: size,
-                      height: size,
-                      margin: 20,
-                      borderWidth: 4,
-                      borderColor: borderColor,
-                      borderRadius: 70,
-                    }}
-                    source={{ uri: player.avatar }}
-                  />
-                  <Text style={numberStyle}>{index + 1}</Text>
-                  <Text style={styles.info}>{player.name}</Text>
-                  <Text style={styles.info}>{player.score}</Text>
-                </Animated.View>
-              );
-            })}
+          if (index === 0) {
+            animatedStyle = { transform: [{ translateY: translateY1 }] };
+            borderColor = "#e5cb26";
+            size = 90;
+            numberStyle = styles.number1;
+          } else if (index === 1) {
+            animatedStyle = { transform: [{ translateY: translateY2 }] };
+            borderColor = "#125250";
+            size = 70;
+            numberStyle = styles.number2;
+          } else {
+            animatedStyle = { transform: [{ translateY: translateY3 }] };
+            borderColor = "#125250";
+            size = 70;
+            numberStyle = styles.number3;
+          }
+
+          return (
+            <Animated.View
+              key={player.id}
+              style={[
+                animatedStyle,
+                isCurrentUser ? styles.highlightTopBox : null, // destaque p/ top 3
+              ]}
+            >
+              {index === 0 && (
+                <AnimatedIcon name="crown" size={18} style={styles.icon} />
+              )}
+              <Image
+                style={{
+                  width: size,
+                  height: size,
+                  margin: 20,
+                  borderWidth: 4,
+                  borderColor: isCurrentUser ? "#2ecc71" : borderColor,
+                  borderRadius: 70,
+                }}
+                source={{ uri: player.avatar }}
+              />
+              <Text style={numberStyle}>{index + 1}</Text>
+              <Text style={[styles.info, isCurrentUser && styles.highlightText]}>
+                {player.name}
+              </Text>
+              <Text style={[styles.info, isCurrentUser && styles.highlightText]}>
+                {player.score}
+              </Text>
+            </Animated.View>
+          );
+        })}
         </View>
 
+        {/* Demais posições a partir do 4º lugar */}
         <View style={styles.positionsContainer}>
-          {[...rankingData]
-            .sort((a, b) => b.score - a.score)
-            .slice(3)
-            .map((player, index) => {
-              return (
-                <View key={player.id} style={styles.box}>
-                  <View style={styles.positionBox}>
-                    <View style={styles.user}>
-                      <Text>{index + 4}</Text>
-                      <Image
-                        style={{
-                          width: 50,
-                          height: 50,
-                          borderRadius: 70,
-                        }}
-                        source={{ uri: player.avatar }}
-                      />
-                      <Text>{player.name}</Text>
-                    </View>
-                    <Text>{player.score}</Text>
+          {rankingData.slice(3).map((player, index) => {
+            const isCurrentUser = player.id === currentUserId;
+
+            // DEBUG opcional
+            console.log("Comparando:", player.id, "com", currentUserId);
+
+            return (
+              <View
+                key={player.id}
+                style={[styles.box, isCurrentUser ? styles.highlightBox : null]}
+              >
+                <View
+                  style={[
+                    styles.positionBox,
+                    isCurrentUser ? styles.highlight : null,
+                  ]}
+                >
+                  <View style={styles.user}>
+                    <Text>{index + 4}</Text>
+                    <Image
+                      style={{
+                        width: 50,
+                        height: 50,
+                        borderRadius: 70,
+                      }}
+                      source={{ uri: player.avatar }}
+                    />
+                    <Text style={[styles.info, isCurrentUser && styles.highlightText]}>
+                    {player.name}
+                  </Text>
                   </View>
+                  <Text style={isCurrentUser ? { fontWeight: "bold" } : null}>
+                    {player.score}
+                  </Text>
                 </View>
-              );
-            })}
+              </View>
+            );
+          })}
         </View>
       </ScrollView>
     </ImageBackground>
@@ -211,6 +229,7 @@ const HomeScreen = () => {
 };
 
 export default HomeScreen;
+
 
 const styles = StyleSheet.create({
   background: {
@@ -270,7 +289,7 @@ const styles = StyleSheet.create({
     color: "grey",
   },
   positionsContainer: {
-    marginVertical: 130
+    marginVertical: 130,
   },
   box: {
     marginTop: 30,
@@ -294,4 +313,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#cbcdcc",
     marginRight: 5,
   },
+ highlightText: {
+  fontWeight: "bold",
+  color: "#000", // garante legibilidade
+},
 });

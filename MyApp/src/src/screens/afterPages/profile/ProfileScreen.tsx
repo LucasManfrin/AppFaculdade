@@ -16,7 +16,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import { useUser } from "../../../../../userContext";
 import {db, auth} from "@/firebaseConfig";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, } from "firebase/firestore";
 
 
 const ProfileScreen = () => {

@@ -17,8 +17,10 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native"
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5"
 import { collection, getDocs } from "firebase/firestore"
-import { db } from "@/firebaseConfig"
+import { db, auth } from "@/firebaseConfig"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { doc, setDoc, getDoc } from "firebase/firestore";
+
 
 export default function Quiz() {
   const route = useRoute()
@@ -32,6 +34,7 @@ export default function Quiz() {
   const [correctAnswers, setCorrectAnswers] = useState(0)
   const navigation = useNavigation()
   const [answers, setAnswers] = useState([])
+
 
   // Timer state
   const [elapsedTime, setElapsedTime] = useState(0)
@@ -147,55 +150,113 @@ export default function Quiz() {
     setSelectedOption(index)
   }
 
-  const handleNextQuestion = () => {
-    // Create an answer object for the current question
-    const currentQuestion = questions[currentQuestionIndex]
-    const isCorrect = selectedOption === currentQuestion.answer
+const handleNextQuestion = async () => {
+  const currentQuestion = questions[currentQuestionIndex];
+  const isCorrect = selectedOption === currentQuestion.answer;
 
-    // Track if this answer is correct
-    if (isCorrect) {
-      setCorrectAnswers(correctAnswers + 1)
-    }
-
-    // Add this answer to an answers array in state
-    setAnswers((prevAnswers) => [
-      ...prevAnswers,
-      {
-        question: currentQuestion.question,
-        selectedOption: currentQuestion.options[selectedOption],
-        correctOption: currentQuestion.originalAnswer,
-        isCorrect: isCorrect,
-      },
-    ])
-
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1)
-      setSelectedOption(null)
-    } else {
-      // Stop the timer when the quiz is completed
-      stopTimer()
-
-      // Calculate score percentage
-      const scorePercentage = Math.round(((isCorrect ? correctAnswers + 1 : correctAnswers) / questions.length) * 100)
-
-      // Now pass the answers array to the Result screen
-      navigation.navigate("Resultado", {
-        correctAnswers: isCorrect ? correctAnswers + 1 : correctAnswers, // Include the last question
-        totalQuestions: questions.length,
-        timeTaken: elapsedTime,
-        scorePercentage,
-        answers: [
-          ...answers,
-          {
-            question: currentQuestion.question,
-            selectedOption: currentQuestion.options[selectedOption],
-            correctOption: currentQuestion.originalAnswer,
-            isCorrect: isCorrect,
-          },
-        ],
-      })
-    }
+  if (isCorrect) {
+    setCorrectAnswers(correctAnswers + 1);
   }
+
+  const newAnswers = [
+    ...answers,
+    {
+      question: currentQuestion.question,
+      selectedOption: currentQuestion.options[selectedOption],
+      correctOption: currentQuestion.originalAnswer,
+      isCorrect: isCorrect,
+    },
+  ];
+
+  if (currentQuestionIndex < questions.length - 1) {
+    setCurrentQuestionIndex(currentQuestionIndex + 1);
+    setSelectedOption(null);
+    setAnswers(newAnswers);
+  } else {
+    stopTimer();
+
+    const finalCorrectAnswers = isCorrect ? correctAnswers + 1 : correctAnswers;
+    const scorePercentage = Math.round((finalCorrectAnswers / questions.length) * 100);
+
+    try {
+      const user = auth.currentUser;
+
+      if (user) {
+        const userId = user.uid;
+
+        // === Buscar nome e avatar ===
+        const userDocRef = doc(db, "users", userId);
+        const userSnap = await getDoc(userDocRef);
+
+        let nome = "Anônimo";
+        let avatar = "https://i.postimg.cc/FHRCKxp4/user-1.png";
+
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          nome = userData.nickname || nome;
+          avatar = userData.avatar || avatar;
+        }
+
+        // === Criar objeto de resultado ===
+        const resultadoAtual = {
+          acertos: finalCorrectAnswers,
+          tempo: elapsedTime,
+          data: new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }),
+          nome,
+          avatar,
+        };
+
+        // === Salvar em 'ultimo' ===
+        const ultimoRef = doc(db, "users", userId, "resultados", "ultimo");
+        await setDoc(ultimoRef, resultadoAtual);
+        console.log("Resultado salvo em 'ultimo'!");
+
+        // === Verificar e salvar em 'melhor' ===
+        const melhorRef = doc(db, "users", userId, "resultados", "melhor");
+        const melhorSnap = await getDoc(melhorRef);
+
+        let deveAtualizarMelhor = false;
+
+        if (!melhorSnap.exists()) {
+          deveAtualizarMelhor = true;
+        } else {
+          const melhorAnterior = melhorSnap.data();
+          if (
+            resultadoAtual.acertos > melhorAnterior.acertos ||
+            (resultadoAtual.acertos === melhorAnterior.acertos &&
+              resultadoAtual.tempo < melhorAnterior.tempo)
+          ) {
+            deveAtualizarMelhor = true;
+          }
+        }
+
+        if (deveAtualizarMelhor) {
+          await setDoc(melhorRef, resultadoAtual);
+          console.log("Novo melhor resultado salvo!");
+        } else {
+          console.log("Resultado não superou o melhor anterior.");
+        }
+      } else {
+        console.warn("Usuário não autenticado. Resultado não foi salvo.");
+      }
+    } catch (error) {
+      console.error("Erro ao salvar resultados:", error);
+      Alert.alert("Erro", "Não foi possível salvar os resultados no banco de dados.");
+    }
+
+    // === Navegar para tela de resultado ===
+    navigation.navigate("Resultado", {
+      correctAnswers: finalCorrectAnswers,
+      totalQuestions: questions.length,
+      timeTaken: elapsedTime,
+      scorePercentage,
+      answers: newAnswers,
+    });
+  }
+};
+
+
+
 
   // Show loading indicator while questions are being loaded
   if (loading) {

@@ -65,7 +65,7 @@ const AvatarScreen = () => {
     setCurrentIndex((next) => (next === avatars.length - 1 ? 0 : next + 1));
   };
 
-  const validateNickname = async () => {
+const validateNickname = async () => {
   if (nickname.trim() === "") {
     setShowError(true);
     return;
@@ -87,14 +87,28 @@ const AvatarScreen = () => {
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      // Se não existir, salva o nickname e avatar
+      // Cria documento do usuário
       await setDoc(userRef, {
         nickname: nickname,
         avatar: selectedAvatar,
       });
-      console.log("Usuário salvo com sucesso.");
+
+      // Cria subcoleção "resultados" com docs "melhor" e "ultimo" com valores iniciais
+      const resultadosRef = doc(db, "users", userId, "resultados", "melhor");
+      const ultimoRef = doc(db, "users", userId, "resultados", "ultimo");
+
+      const resultadoInicial = {
+        acertos: 0,
+        tempo: 9999, // tempo alto proposital para fácil substituição
+        data: new Date().toISOString(),
+      };
+
+      await setDoc(resultadosRef, resultadoInicial);
+      await setDoc(ultimoRef, resultadoInicial);
+
+      console.log("Usuário e subcoleção resultados criados com sucesso.");
     } else {
-      console.log("Usuário já tem nickname e avatar salvos.");
+      console.log("Usuário já existe.");
     }
 
     navigation.navigate("Welcome");
@@ -102,6 +116,7 @@ const AvatarScreen = () => {
     console.error("Erro ao acessar ou salvar no Firestore:", error);
   }
 };
+
 
   return (
     // faz com que a tela acompanhe o teclado a subir
