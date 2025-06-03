@@ -40,7 +40,7 @@ const ProfileScreen = () => {
           setRightAnswers(data.acertos || 0);
           setQuizDate(data.data || "");
           setQuizTime(data.tempo || 0);
-          setTotalQuestions(5); // você pode atualizar isso para vir do Firestore se armazenar depois
+          setTotalQuestions(5); // mudar o numero conforme a quantidade de perguntas do quiz
         } else {
           console.log("Documento de resultado 'ultimo' não encontrado.");
         }
