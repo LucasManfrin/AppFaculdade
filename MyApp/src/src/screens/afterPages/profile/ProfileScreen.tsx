@@ -16,10 +16,43 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import { useUser } from "../../../../../userContext";
 import {db, auth} from "@/firebaseConfig";
-import { doc, updateDoc, } from "firebase/firestore";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
+
+
 
 
 const ProfileScreen = () => {
+  const [rightAnswers, setRightAnswers] = useState(0);
+  const [totalQuestions, setTotalQuestions] = useState(5); // valor padrão
+  const [quizDate, setQuizDate] = useState('');
+  const [quizTime, setQuizTime] = useState(0);
+
+  useEffect(() => {
+  const fetchQuizData = async () => {
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        const docRef = doc(db, "users", user.uid, "resultados", "ultimo");
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setRightAnswers(data.acertos || 0);
+          setQuizDate(data.data || "");
+          setQuizTime(data.tempo || 0);
+          setTotalQuestions(5); // você pode atualizar isso para vir do Firestore se armazenar depois
+        } else {
+          console.log("Documento de resultado 'ultimo' não encontrado.");
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao buscar resultado do quiz:", error);
+    }
+  };
+
+  fetchQuizData();
+}, []);
+  
   useEffect(() => {
   const fetchUserData = async () => {
     try {
@@ -137,19 +170,17 @@ const ProfileScreen = () => {
     setCurrentIndex((next) => (next === avatars.length - 1 ? 0 : next + 1));
   };
 
-  const totalQuestions = 10;
-  const RightQuetions = 7;
-  const desempenho = RightQuetions / totalQuestions;
+  const desempenho = totalQuestions > 0 ? rightAnswers / totalQuestions : 0;
 
   let desempenhoTexto = "";
-  if (RightQuetions <= 3) {
+  if (rightAnswers <= 1) {
     desempenhoTexto = "Você pode melhorar. Continue praticando!";
-  } else if (RightQuetions <= 5) {
+  } else if (rightAnswers <= 2) {
     desempenhoTexto =
       "Bom começo! Com mais prática, \nvocê vai melhorar ainda mais.";
-  } else if (RightQuetions <= 7) {
+  } else if (rightAnswers <= 3) {
     desempenhoTexto = "Está indo bem, mas ainda há espaço para aprimorar!";
-  } else if (RightQuetions <= 9) {
+  } else if (rightAnswers <= 4) {
     desempenhoTexto = "Ótimo desempenho! Continue assim!";
   } else {
     desempenhoTexto =
@@ -333,20 +364,21 @@ const ProfileScreen = () => {
                 )}%`}</Text>
               </View>
 
-              <View style={styles.quizInfoContainer}>
-                <Text style={{ fontWeight: "bold", color: "#447f78" }}>
-                  Último Quiz
-                </Text>
-                <Text
-                  style={{
-                    alignSelf: "center",
-                    color: "grey",
-                    fontWeight: "bold",
-                  }}
-                >
-                  {`${RightQuetions}/10`}
-                </Text>
+              <View style={styles.quizInfoBox}>
+              <Text style={styles.quizTitle}>📊 Último Quiz</Text>
+              <View style={styles.quizRow}>
+                <Text style={styles.quizLabel}>Acertos: </Text>
+                <Text style={styles.quizValue}>{`${rightAnswers}/${totalQuestions}`}</Text>
               </View>
+              <View style={styles.quizRow}>
+                <Text style={styles.quizLabel}>Realizado em: </Text>
+                <Text style={styles.quizValue}>{quizDate}</Text>
+              </View>
+              <View style={styles.quizRow}>
+                <Text style={styles.quizLabel}>Tempo: </Text>
+                <Text style={styles.quizValue}>{`${quizTime} segundos`}</Text>
+              </View>
+            </View>
             </View>
           </View>
         </View>
@@ -434,4 +466,37 @@ const styles = StyleSheet.create({
     marginTop: "5%",
     padding: 6,
   },
+  quizInfoBox: {
+  marginTop: 20,
+  backgroundColor: "#f5f5f5",
+  borderRadius: 12,
+  padding: 16,
+  width: "85%",
+  alignSelf: "center",
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  elevation: 3,
+},
+quizTitle: {
+  fontWeight: "bold",
+  fontSize: 16,
+  color: "#2f7166",
+  marginBottom: 10,
+  textAlign: "center",
+},
+quizRow: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginVertical: 2,
+},
+quizLabel: {
+  fontWeight: "600",
+  color: "#555",
+},
+quizValue: {
+  fontWeight: "bold",
+  color: "#333",
+},
 });
