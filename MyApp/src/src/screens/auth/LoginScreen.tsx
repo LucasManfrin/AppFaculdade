@@ -13,6 +13,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator
 } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
@@ -32,41 +33,43 @@ const LoginScreen = () => {
   const [email, setEmail] = useState("")
   const [senhaVisivel, setSenhaVisivel] = useState(false)
   const [showError, setShowError] = useState(false)
+  const [loading, setLoading] = useState(false);
+
 
   // Função de login
   const handleLogin = async () => {
     if (email.trim() === "" || senha.trim() === "") {
-      setShowError(true)
-      return
+      setShowError(true);
+      return;
     }
 
-    setShowError(false)
+    setShowError(false);
+    setLoading(true); // ativa o loading
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, senha)
-      const uid = userCredential.user.uid
+      const userCredential = await signInWithEmailAndPassword(auth, email, senha);
+      const uid = userCredential.user.uid;
 
-      const userRef = doc(db, "users", uid)
-      const docSnap = await getDoc(userRef)
+      const userRef = doc(db, "users", uid);
+      const docSnap = await getDoc(userRef);
 
       if (docSnap.exists()) {
-        const userData = docSnap.data()
+        const userData = docSnap.data();
         if (userData.nickname && userData.avatar) {
-          console.log("Usuário já tem nickname e avatar salvos.")
-          navigation.replace("Welcome")
+          navigation.replace("Welcome");
         } else {
-          console.log("Nickname ou avatar não preenchidos. Redirecionando...")
-          navigation.replace("Avatar")
+          navigation.replace("Avatar");
         }
       } else {
-        console.log("Documento não existe. Redirecionando...")
-        navigation.replace("Avatar")
+        navigation.replace("Avatar");
       }
     } catch (error) {
-      console.error("Erro ao fazer login:", error)
-      setShowError(true)
+      console.error("Erro ao fazer login:", error);
+      setShowError(true);
+    } finally {
+      setLoading(false); // desativa o loading
     }
-  }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -113,15 +116,25 @@ const LoginScreen = () => {
             </View>
 
             <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate("PasswordReset")}>
                 <Text style={styles.registerStyle}>Esqueceu a senha?</Text>
               </TouchableOpacity>
             </View>
 
             {showError && <Text style={styles.error}>E-mail ou senha incorretos!</Text>}
 
-            <TouchableOpacity style={styles.startButton} onPress={handleLogin}>
-              <Text style={styles.buttonText}>Entrar</Text>
+            <TouchableOpacity
+              style={styles.startButton}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              {loading ? (
+                <View style={styles.loadingButton}>
+                  <ActivityIndicator size="small" color="#fff" />
+                </View>
+              ) : (
+                <Text style={styles.buttonText}>Entrar</Text>
+              )}
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -204,4 +217,12 @@ const styles = StyleSheet.create({
     marginLeft: 30,
     fontSize: 13,
   },
+  loadingButton: {
+  width: wp("85%"),
+  height: 45,
+  borderRadius: 15,
+  backgroundColor: "#447f78",
+  justifyContent: "center",
+  alignItems: "center",
+},
 })

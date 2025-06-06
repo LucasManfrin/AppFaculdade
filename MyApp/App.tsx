@@ -15,11 +15,12 @@ import Study3Screen from './src/src/screens/afterPages/studies/Study3Screen';
 import Study4Screen from './src/src/screens/afterPages/studies/Study4Screen';
 import Study5Screen from './src/src/screens/afterPages/studies/Study5Screen';
 
-// Telas do Lucas
+// Telas do Lucas e JAPONES SAFADO
 
 import Quiz from './src/src/screens/afterPages/quiz/QuizScreen';
 import Resultado from './src/src/screens/afterPages/results/ResultScreen';
 import QuizIntro from './src/src/screens/afterPages/play/PlayScreen';
+import PasswordResetScreen from './src/src/screens/auth/PasswordResetScreen';
 
 
 export type RootStackParamList = {
@@ -37,6 +38,7 @@ export type RootStackParamList = {
   Quiz: undefined;
   Resultado: undefined;
   QuizIntro: undefined;
+  PasswordReset: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -50,6 +52,7 @@ const Rotas = () => {
           screenOptions={{ headerShown: false }}
         >
           <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="PasswordReset" component={PasswordResetScreen} />
           <Stack.Screen name="Avatar" component={AvatarScreen} />
           <Stack.Screen name="Navigate" component={BarNavigate} />
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
@@ -59,8 +62,8 @@ const Rotas = () => {
           <Stack.Screen name="Study4" component={Study4Screen} />
           <Stack.Screen name="Study5" component={Study5Screen} />
           <Stack.Screen name="Quiz" component = {Quiz} />
-          <Stack.Screen name="Resultado" component = {Resultado} />
-          <Stack.Screen name="QuizIntro" component = {QuizIntro} />
+          <Stack.Screen name="Resultado" component ={Resultado} />
+          <Stack.Screen name="QuizIntro" component ={QuizIntro} />
         </Stack.Navigator>
       </NavigationContainer>
     </UserProvider>

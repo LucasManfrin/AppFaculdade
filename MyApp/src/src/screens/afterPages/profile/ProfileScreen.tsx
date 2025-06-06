@@ -8,114 +8,82 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   Keyboard,
-  ImageBackground,
-  SafeAreaView
+  SafeAreaView,
+  ScrollView,
 } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import { useUser } from "../../../../../userContext";
-import {db, auth} from "@/firebaseConfig";
+import { db, auth } from "@/firebaseConfig";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
-
-
-
 
 const ProfileScreen = () => {
   const [rightAnswers, setRightAnswers] = useState(0);
-  const [totalQuestions, setTotalQuestions] = useState(5); // valor padrão
+  const [totalQuestions, setTotalQuestions] = useState(5);
   const [quizDate, setQuizDate] = useState('');
   const [quizTime, setQuizTime] = useState(0);
 
-  useEffect(() => {
-  const fetchQuizData = async () => {
-    try {
-      const user = auth.currentUser;
-      if (user) {
-        const docRef = doc(db, "users", user.uid, "resultados", "ultimo");
-        const docSnap = await getDoc(docRef);
+  const { avatarUri, setAvatarUri, nicknameProvider, setNicknameProvider } = useUser();
 
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setRightAnswers(data.acertos || 0);
-          setQuizDate(data.data || "");
-          setQuizTime(data.tempo || 0);
-          setTotalQuestions(5); // mudar o numero conforme a quantidade de perguntas do quiz
-        } else {
-          console.log("Documento de resultado 'ultimo' não encontrado.");
-        }
-      }
-    } catch (error) {
-      console.error("Erro ao buscar resultado do quiz:", error);
-    }
-  };
-
-  fetchQuizData();
-}, []);
-  
-  useEffect(() => {
-  const fetchUserData = async () => {
-    try {
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        const userDoc = await db.collection("users").doc(currentUser.uid).get();
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          
-          if (userData) {
-            if (userData.avatar) {
-              setAvatarUri(userData.avatar);
-            }
-            if (userData.nickname) {
-              setNicknameProvider(userData.nickname);
-            }
-          }
-        } else {
-          console.log("Documento do usuário não encontrado.");
-        }
-      }
-    } catch (error) {
-      console.error("Erro ao buscar dados do usuário:", error);
-    }
-  };
-
-  fetchUserData();
-}, []);
-
-  const avatars = [
-    { uri: "https://i.postimg.cc/cHrDSh5G/avatar1.png" },
-    { uri: "https://i.postimg.cc/J4KwQ6JR/avatar2.png" },
-    { uri: "https://i.postimg.cc/rynCC5mv/avatar3.png" },
-    { uri: "https://i.postimg.cc/SxpXWKWB/avatar4.png" },
-    { uri: "https://i.postimg.cc/MKtHgJN4/avatar5.png" },
-    { uri: "https://i.postimg.cc/NFzVrMLS/avatar6.png" },
-    { uri: "https://i.postimg.cc/x1w24sfh/avatar7.png" },
-    { uri: "https://i.postimg.cc/nVDwdHjF/avatar8.png" },
-    { uri: "https://i.postimg.cc/65HRnZWy/avatar9.png" },
-    { uri: "https://i.postimg.cc/MHHZSvhF/avatar10.png" },
-    { uri: "https://i.postimg.cc/SNjLZdtW/avatar11.png" },
-    { uri: "https://i.postimg.cc/Pr8ppRRF/avatar12.png" },
-    { uri: "https://i.postimg.cc/65RVJqt3/avatar13.png" },
-    { uri: "https://i.postimg.cc/9QC76BL8/avatar14.png" },
-    { uri: "https://i.postimg.cc/RhwW83Kx/avatar15.png" },
-    { uri: "https://i.postimg.cc/wTHMMjD3/avatar16.png" },
-    { uri: "https://i.postimg.cc/TPZY6dRd/avatar17.png" },
-    { uri: "https://i.postimg.cc/63fsmtq1/avatar18.png" },
-    { uri: "https://i.postimg.cc/HxHR5Rz0/avatar19.png" },
-    { uri: "https://i.postimg.cc/vBdMK1my/bottts-1744605532872.png" },
-  ];
-
-  const { avatarUri, setAvatarUri, nicknameProvider, setNicknameProvider } =
-    useUser();
-
-    {
-      /* ---Condições para existencia do nickname atualizado e para existencia do textInput--- */
-    }
   const [tempNickname, setTempNickname] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [advice, setAdvice] = useState(false);
   const [editAvatar, setEditAvatar] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  const avatars = [...Array(20).keys()].map(i => ({ uri: `https://i.postimg.cc/${["cHrDSh5G/avatar1.png","J4KwQ6JR/avatar2.png","rynCC5mv/avatar3.png","SxpXWKWB/avatar4.png","MKtHgJN4/avatar5.png","NFzVrMLS/avatar6.png","x1w24sfh/avatar7.png","nVDwdHjF/avatar8.png","65HRnZWy/avatar9.png","MHHZSvhF/avatar10.png","SNjLZdtW/avatar11.png","Pr8ppRRF/avatar12.png","65RVJqt3/avatar13.png","9QC76BL8/avatar14.png","RhwW83Kx/avatar15.png","wTHMMjD3/avatar16.png","TPZY6dRd/avatar17.png","63fsmtq1/avatar18.png","HxHR5Rz0/avatar19.png","vBdMK1my/bottts-1744605532872.png"][i]}` }));
+
+  useEffect(() => {
+    const fetchQuizData = async () => {
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          const docRef = doc(db, "users", user.uid, "resultados", "ultimo");
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setRightAnswers(data.acertos || 0);
+            setQuizDate(data.data || "");
+            setQuizTime(data.tempo || 0);
+            setTotalQuestions(5);
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao buscar resultado do quiz:", error);
+      }
+    };
+    fetchQuizData();
+  }, []);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          const userDoc = await db.collection("users").doc(currentUser.uid).get();
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            if (userData?.avatar) setAvatarUri(userData.avatar);
+            if (userData?.nickname) setNicknameProvider(userData.nickname);
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao buscar dados do usuário:", error);
+      }
+    };
+    fetchUserData();
+  }, []);
+
+  const desempenho = totalQuestions > 0 ? rightAnswers / totalQuestions : 0;
+
+  let desempenhoTexto = "";
+  if (rightAnswers <= 1) desempenhoTexto = "Você pode melhorar. Continue praticando!";
+  else if (rightAnswers <= 2) desempenhoTexto = "Bom começo! Com mais prática, \nvocê vai melhorar ainda mais.";
+  else if (rightAnswers <= 3) desempenhoTexto = "Está indo bem, mas ainda há espaço para aprimorar!";
+  else if (rightAnswers <= 4) desempenhoTexto = "Ótimo desempenho! Continue assim!";
+  else desempenhoTexto = "Parabéns! Você alcançou a nota máxima, excelente trabalho!";
 
   const handleEditPress = () => setIsEditing(true);
 
@@ -133,17 +101,13 @@ const ProfileScreen = () => {
           setNicknameProvider(tempNickname.trim());
           setAdvice(false);
           setIsEditing(false);
-          console.log("Nickname atualizado com sucesso.")
         }
       } catch (error) {
-        console.error("Erro ao salvar nickname no Firestore:", error);
+        console.error("Erro ao salvar nickname:", error);
       }
     }
   };
 
-  {
-    /*--Condições para existencia do avatar atualizado e para existencia do array de seleçao-- */
-  }
   const saveAvatar = async () => {
     const selectedAvatarUri = avatars[currentIndex].uri;
     try {
@@ -155,10 +119,9 @@ const ProfileScreen = () => {
         });
         setAvatarUri(selectedAvatarUri);
         setEditAvatar(false);
-        console.log("Avatar atualizado com sucesso.")
       }
     } catch (error) {
-      console.error("Erro ao salvar avatar no Firestore:", error);
+      console.error("Erro ao salvar avatar:", error);
     }
   };
 
@@ -170,26 +133,6 @@ const ProfileScreen = () => {
     setCurrentIndex((next) => (next === avatars.length - 1 ? 0 : next + 1));
   };
 
-  const desempenho = totalQuestions > 0 ? rightAnswers / totalQuestions : 0;
-
-  let desempenhoTexto = "";
-  if (rightAnswers <= 1) {
-    desempenhoTexto = "Você pode melhorar. Continue praticando!";
-  } else if (rightAnswers <= 2) {
-    desempenhoTexto =
-      "Bom começo! Com mais prática, \nvocê vai melhorar ainda mais.";
-  } else if (rightAnswers <= 3) {
-    desempenhoTexto = "Está indo bem, mas ainda há espaço para aprimorar!";
-  } else if (rightAnswers <= 4) {
-    desempenhoTexto = "Ótimo desempenho! Continue assim!";
-  } else {
-    desempenhoTexto =
-      "Parabéns! Você alcançou a nota máxima, excelente trabalho!";
-  }
-
-    {
-      /*Condições para existencia do círculo de desempenho*/;
-    }
   const strokeWidth = 10;
   const size = 120;
   const radius = (size - strokeWidth) / 2;
@@ -200,188 +143,79 @@ const ProfileScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.container}>
-          <View
-            style={styles.containerColor}
-          >
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
             <Text style={styles.title}>Perfil</Text>
+          </View>
 
-            {/*--Condição de existencia usado com o usestate ao apertar o botão para alternar entre modos--*/}
-            <View>
-              {editAvatar ? ( // valor inicial é falso, portanto irá aparecer oq está depois do : (caso fosse verdadeiro, apareceria oq está antes do :)
+          <View style={styles.body}>
+            {/* avatar */}
+            {editAvatar ? (
+              <View style={{ flexDirection: "row", alignItems: "center", marginTop: 20 }}>
+                <TouchableOpacity onPress={handlePrev}><Ionicons name="chevron-back-circle" size={30} color="#333" /></TouchableOpacity>
+                <Image source={avatars[currentIndex]} style={styles.profileImage} />
+                <TouchableOpacity onPress={handleNext}><Ionicons name="chevron-forward-circle" size={30} color="#333" /></TouchableOpacity>
+              </View>
+            ) : (
+              <Image source={{ uri: avatarUri || avatars[0].uri }} style={styles.profileImage} />
+            )}
+            <TouchableOpacity onPress={() => editAvatar ? saveAvatar() : setEditAvatar(true)}>
+              <Text style={{ fontWeight: "bold", color: "#447f78", marginTop: 10 }}>
+                {editAvatar ? "Salvar Avatar" : "Editar foto"} <FontAwesome5 name="pen" size={14} color="#447f78" />
+              </Text>
+            </TouchableOpacity>
+
+            {/* nickname */}
+            <Text style={styles.sectionTitle}>Seu Nickname</Text>
+            <View style={styles.nicknameContainer}>
+              {isEditing ? (
                 <>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <TouchableOpacity onPress={handlePrev}>
-                      <Ionicons
-                        name="chevron-back-circle"
-                        size={30}
-                        color="#333"
-                      />
-                    </TouchableOpacity>
-
-                    <Image source={avatars[currentIndex]} style={styles.avatar} />
-
-                    <TouchableOpacity onPress={handleNext}>
-                      <Ionicons
-                        name="chevron-forward-circle"
-                        size={30}
-                        color="#333"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                  <TouchableOpacity onPress={saveAvatar}>
-                    <Text
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        color: "#447f78",
-                      }}
-                    >
-                      Salvar Avatar
-                    </Text>
+                  <TextInput
+                    value={tempNickname}
+                    onChangeText={setTempNickname}
+                    style={{ flex: 1, color: "grey", fontWeight: "bold" }}
+                    autoFocus
+                  />
+                  <TouchableOpacity onPress={handleSave}>
+                    <FontAwesome5 name="check" size={18} color="green" />
                   </TouchableOpacity>
                 </>
               ) : (
                 <>
-                  <Image
-                    source={{
-                      uri:
-                        avatarUri || "https://i.postimg.cc/FHRCKxp4/user-1.png",
-                    }}
-                    style={styles.profileImage}
-                  />
-
-                  {/*Botão para edição de avatares*/}
-                  <TouchableOpacity onPress={() => setEditAvatar(true)}>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        marginTop: "4%",
-                        alignSelf: "center",
-                      }}
-                    >
-                      <Text style={{ fontWeight: "bold", color: "#447f78" }}>
-                        Editar foto
-                      </Text>
-                      <FontAwesome5 name="pen" size={18} color="#447f78" />
-                    </View>
+                  <Text style={{ flex: 1, color: "grey", fontWeight: "bold", paddingVertical: "4%" }}>{nicknameProvider}</Text>
+                  <TouchableOpacity onPress={handleEditPress}>
+                    <FontAwesome5 name="pen" size={18} color="black" />
                   </TouchableOpacity>
                 </>
               )}
             </View>
+            {advice && <Text style={{ color: "red", fontSize: 12 }}>Preencha o campo do Nickname!</Text>}
 
-            {/*--Condição de existencia usado com o usestate ao apertar o botão para alternar entre modos--*/}
-            <View style={{ marginTop: 30 }}>
-              <Text
-                style={{
-                  textAlign: "center",
-                  fontWeight: "bold",
-                  color: "#447f78",
-                }}
-              >
-                Seu Nickname
-              </Text>
-              <View style={styles.nicknameContainer}>
-                {isEditing ? (
-                  <>
-                    <TextInput
-                      value={tempNickname}
-                      onChangeText={setTempNickname}
-                      style={{ flex: 1, color: "grey", fontWeight: "bold" }}
-                      autoFocus
-                    />
-                    <TouchableOpacity onPress={handleSave}>
-                      <FontAwesome5 name="check" size={18} color="green" />
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <>
-                    <Text
-                      style={{
-                        flex: 1,
-                        color: "grey",
-                        fontWeight: "bold",
-                        paddingVertical: "4%",
-                      }}
-                    >
-                      {nicknameProvider}
-                    </Text>
-                    <TouchableOpacity onPress={handleEditPress}>
-                      <FontAwesome5 name="pen" size={18} color="black" />
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
-              {advice && (
-                <Text style={{ color: "red", fontSize: 12 }}>
-                  Preencha o campo do Nickname!
-                </Text>
-              )}
-            </View>
-
-            <View style={{ marginTop: 30 }}>
-              <Text
-                style={{
-                  textAlign: "center",
-                  fontWeight: "bold",
-                  color: "#447f78",
-                }}
-              >
-                Seu Desempenho
-              </Text>
-              <Text style={styles.desempenho}>{desempenhoTexto}</Text>
-            </View>
-
-            {/*-- Circunferencia com porcentagem do desempenho--*/}
-            <View style={{ marginTop: 40, alignItems: "center" }}>
+            {/* desempenho */}
+            <Text style={styles.sectionTitle}>Seu Desempenho</Text>
+            <Text style={styles.desempenho}>{desempenhoTexto}</Text>
+            <View style={{ marginTop: 30, alignItems: "center" }}>
               <Svg width={size} height={size}>
-                <Circle
-                  stroke="#ccc"
-                  fill="none"
-                  cx={size / 2}
-                  cy={size / 2}
-                  r={radius}
-                  strokeWidth={strokeWidth}
-                />
-                <Circle
-                  stroke="#4CAF50"
-                  fill="none"
-                  cx={size / 2}
-                  cy={size / 2}
-                  r={radius}
-                  strokeWidth={strokeWidth}
-                  strokeDasharray={circumference}
-                  strokeDashoffset={strokeDashoffset}
-                  strokeLinecap="round"
-                  rotation="-90"
-                  origin={`${size / 2}, ${size / 2}`}
-                />
+                <Circle stroke="#ccc" fill="none" cx={size / 2} cy={size / 2} r={radius} strokeWidth={strokeWidth} />
+                <Circle stroke="#4CAF50" fill="none" cx={size / 2} cy={size / 2} r={radius} strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" rotation="-90" origin={`${size / 2}, ${size / 2}`} />
               </Svg>
-              {/*--porcentagem do desempenho--*/}
               <View style={styles.progressTextContainer}>
-                <Text style={styles.progressText}>{`${Math.round(
-                  progress
-                )}%`}</Text>
-              </View>
-
-              <View style={styles.quizInfoBox}>
-              <Text style={styles.quizTitle}>📊 Último Quiz</Text>
-              <View style={styles.quizRow}>
-                <Text style={styles.quizLabel}>Acertos: </Text>
-                <Text style={styles.quizValue}>{`${rightAnswers}/${totalQuestions}`}</Text>
-              </View>
-              <View style={styles.quizRow}>
-                <Text style={styles.quizLabel}>Realizado em: </Text>
-                <Text style={styles.quizValue}>{quizDate}</Text>
-              </View>
-              <View style={styles.quizRow}>
-                <Text style={styles.quizLabel}>Tempo: </Text>
-                <Text style={styles.quizValue}>{`${quizTime} segundos`}</Text>
+                <Text style={styles.progressText}>{`${Math.round(progress)}%`}</Text>
               </View>
             </View>
+
+            {/* resultado */}
+            <View style={styles.quizInfoBox}>
+              <Text style={styles.quizTitle}>📊 Último Quiz</Text>
+              <View style={styles.quizRow}><Text style={styles.quizLabel}>Acertos:</Text><Text style={styles.quizValue}>{`${rightAnswers}/${totalQuestions}`}</Text></View>
+              <View style={styles.quizRow}><Text style={styles.quizLabel}>Realizado em:</Text><Text style={styles.quizValue}>{quizDate}</Text></View>
+              <View style={styles.quizRow}><Text style={styles.quizLabel}>Tempo:</Text><Text style={styles.quizValue}>{`${quizTime} segundos`}</Text></View>
             </View>
           </View>
-        </View>
+        </ScrollView>
       </TouchableWithoutFeedback>
     </SafeAreaView>
   );
@@ -392,39 +226,42 @@ export default ProfileScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "flex-start",
+    backgroundColor: "#fff",
   },
-  containerColor:{
+  scrollContainer: {
+    paddingBottom: 100,
+    flexGrow: 1,
+  },
+  header: {
     backgroundColor: "#349f95",
-    width: "100%",
-    height: "23%",
+    paddingTop: 30,
+    paddingBottom: 20,
     alignItems: "center",
-    },
+  },
   title: {
-    marginTop: 25, // Reduced from 70 to account for SafeAreaView padding
     fontSize: 18,
     fontWeight: "bold",
     color: "#fff",
   },
-  avatar: {
-    width: 140,
-    height: 140,
-    marginTop: "13%",
-    borderRadius: 75,
-    backgroundColor: "#dddbdc",
-    borderWidth: 4,
-    borderColor: "#fff",
-    padding: 15,
+  body: {
+    alignItems: "center",
+    backgroundColor: "#fff",
+    paddingTop: 20,
   },
   profileImage: {
     width: 140,
     height: 140,
-    marginTop: 30,
+    marginTop: 10,
+    borderRadius: 75,
     backgroundColor: "#dddbdc",
-    borderColor: "#fff",
     borderWidth: 4,
-    borderRadius: 120,
-    padding: 10,
+    borderColor: "#fff",
+  },
+  sectionTitle: {
+    marginTop: 30,
+    textAlign: "center",
+    fontWeight: "bold",
+    color: "#447f78",
   },
   nicknameContainer: {
     flexDirection: "row",
@@ -459,44 +296,38 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "grey",
   },
-  quizInfoContainer: {
-    borderWidth: 2,
-    borderColor: "grey",
-    borderRadius: 15,
-    marginTop: "5%",
-    padding: 6,
-  },
   quizInfoBox: {
-  marginTop: 20,
-  backgroundColor: "#f5f5f5",
-  borderRadius: 12,
-  padding: 16,
-  width: "85%",
-  alignSelf: "center",
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: 4,
-  elevation: 3,
-},
-quizTitle: {
-  fontWeight: "bold",
-  fontSize: 16,
-  color: "#2f7166",
-  marginBottom: 10,
-  textAlign: "center",
-},
-quizRow: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  marginVertical: 2,
-},
-quizLabel: {
-  fontWeight: "600",
-  color: "#555",
-},
-quizValue: {
-  fontWeight: "bold",
-  color: "#333",
-},
+    marginTop: 20,
+    marginBottom: 20,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 12,
+    padding: 16,
+    width: "85%",
+    alignSelf: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  quizTitle: {
+    fontWeight: "bold",
+    fontSize: 16,
+    color: "#2f7166",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  quizRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginVertical: 2,
+  },
+  quizLabel: {
+    fontWeight: "600",
+    color: "#555",
+  },
+  quizValue: {
+    fontWeight: "bold",
+    color: "#333",
+  },
 });
