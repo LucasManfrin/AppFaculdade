@@ -22,6 +22,9 @@ const HomeScreen = () => {
   const translateY3 = useRef(new Animated.Value(0)).current;
   const [currentUserId, setCurrentUserId] = useState(null);
 
+  // Animações de fade-in para cada posição do ranking
+  const fadeAnimations = useRef([]).current;
+
   // Função de animação flutuante para os 3 primeiros colocados
   const createFloatingAnimation = (
     animatedValue: Animated.Value,
@@ -44,71 +47,98 @@ const HomeScreen = () => {
     );
   };
 
-useEffect(() => {
-  const unsubscribe = auth.onAuthStateChanged((user) => {
-    if (user) {
-      setCurrentUserId(user.uid);
+  // Função para criar animações de fade-in sequenciais
+  const createFadeInAnimations = (totalPlayers: number) => {
+    // Limpa animações anteriores
+    fadeAnimations.length = 0;
+    
+    // Cria uma nova animação para cada jogador
+    for (let i = 0; i < totalPlayers; i++) {
+      fadeAnimations.push(new Animated.Value(0));
     }
-  });
 
-  // Inicia animações
-  createFloatingAnimation(translateY1, 0).start();
-  createFloatingAnimation(translateY2, 300).start();
-  createFloatingAnimation(translateY3, 600).start();
+    // Inicia as animações sequencialmente
+    const animations = fadeAnimations.map((fadeAnim, index) => {
+      return Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        delay: index * 200, // 200ms de delay entre cada item
+        useNativeDriver: true,
+      });
+    });
 
-  return () => {
-    unsubscribe();
-    translateY1.stopAnimation();
-    translateY2.stopAnimation();
-    translateY3.stopAnimation();
+    // Executa todas as animações
+    Animated.stagger(200, animations).start();
   };
-}, []);
 
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setCurrentUserId(user.uid);
+      }
+    });
+
+    // Inicia animações flutuantes
+    createFloatingAnimation(translateY1, 0).start();
+    createFloatingAnimation(translateY2, 300).start();
+    createFloatingAnimation(translateY3, 600).start();
+
+    return () => {
+      unsubscribe();
+      translateY1.stopAnimation();
+      translateY2.stopAnimation();
+      translateY3.stopAnimation();
+    };
+  }, []);
 
   useEffect(() => {
     // Busca os resultados 'melhor' de todos os usuários
     const fetchRanking = async () => {
-    try {
-      const usersSnap = await getDocs(collection(db, "users"));
-      let allUsuarios = [];
+      try {
+        const usersSnap = await getDocs(collection(db, "users"));
+        let allUsuarios = [];
 
-      for (const userDoc of usersSnap.docs) {
-        const userId = userDoc.id;
-        const userData = userDoc.data();
+        for (const userDoc of usersSnap.docs) {
+          const userId = userDoc.id;
+          const userData = userDoc.data();
 
-        const melhorRef = doc(db, "users", userId, "resultados", "melhor");
-        const melhorSnap = await getDoc(melhorRef);
+          const melhorRef = doc(db, "users", userId, "resultados", "melhor");
+          const melhorSnap = await getDoc(melhorRef);
 
-        let score = 0;
-        let tempo = 9999;
+          let score = 0;
+          let tempo = 9999;
 
-        if (melhorSnap.exists()) {
-          const melhorData = melhorSnap.data();
-          score = melhorData.acertos || 0;
-          tempo = melhorData.tempo || 9999;
+          if (melhorSnap.exists()) {
+            const melhorData = melhorSnap.data();
+            score = melhorData.acertos || 0;
+            tempo = melhorData.tempo || 9999;
+          }
+
+          allUsuarios.push({
+            id: userId,
+            name: userData.nickname || "Anônimo",
+            score,
+            tempo,
+            avatar: userData.avatar || "https://i.postimg.cc/FHRCKxp4/user-1.png",
+          });
         }
 
-        allUsuarios.push({
-          id: userId,
-          name: userData.nickname || "Anônimo",
-          score,
-          tempo,
-          avatar: userData.avatar || "https://i.postimg.cc/FHRCKxp4/user-1.png",
+        // Ordenar por score, depois por tempo
+        const sorted = allUsuarios.sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          return a.tempo - b.tempo;
         });
+
+        setRankingData(sorted);
+        
+        // Inicia as animações de fade-in após carregar os dados
+        createFadeInAnimations(sorted.length);
+        
+        console.log("Ranking carregado com todos os usuários:", sorted);
+      } catch (error) {
+        console.error("Erro ao buscar ranking:", error);
       }
-
-    // Ordenar por score, depois por tempo
-    const sorted = allUsuarios.sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      return a.tempo - b.tempo;
-    });
-
-    setRankingData(sorted);
-    console.log("Ranking carregado com todos os usuários:", sorted);
-  } catch (error) {
-    console.error("Erro ao buscar ranking:", error);
-  }
-};
+    };
 
     fetchRanking(); // Executa a função ao montar o componente
   }, []);
@@ -124,76 +154,104 @@ useEffect(() => {
         {/* Top 3 colocados com animação */}
         <View style={styles.imageContainer}>
           {rankingData.slice(0, 3).map((player, index) => {
-          const isCurrentUser = player.id === currentUserId;
+            const isCurrentUser = player.id === currentUserId;
+            const fadeAnim = fadeAnimations[index] || new Animated.Value(1);
 
-          let animatedStyle = {};
-          let borderColor = "";
-          let size = 70;
-          let numberStyle = {};
+            let animatedStyle = {};
+            let borderColor = "";
+            let size = 70;
+            let numberStyle = {};
 
-          if (index === 0) {
-            animatedStyle = { transform: [{ translateY: translateY1 }] };
-            borderColor = "#e5cb26";
-            size = 90;
-            numberStyle = styles.number1;
-          } else if (index === 1) {
-            animatedStyle = { transform: [{ translateY: translateY2 }] };
-            borderColor = "#125250";
-            size = 70;
-            numberStyle = styles.number2;
-          } else {
-            animatedStyle = { transform: [{ translateY: translateY3 }] };
-            borderColor = "#125250";
-            size = 70;
-            numberStyle = styles.number3;
-          }
+            if (index === 0) {
+              animatedStyle = { transform: [{ translateY: translateY1 }] };
+              borderColor = "#e5cb26";
+              size = 90;
+              numberStyle = styles.number1;
+            } else if (index === 1) {
+              animatedStyle = { transform: [{ translateY: translateY2 }] };
+              borderColor = "#125250";
+              size = 70;
+              numberStyle = styles.number2;
+            } else {
+              animatedStyle = { transform: [{ translateY: translateY3 }] };
+              borderColor = "#125250";
+              size = 70;
+              numberStyle = styles.number3;
+            }
 
-          return (
-            <Animated.View
-              key={player.id}
-              style={[
-                animatedStyle,
-                isCurrentUser ? styles.highlightTopBox : null, // destaque p/ top 3
-              ]}
-            >
-              {index === 0 && (
-                <AnimatedIcon name="crown" size={18} style={styles.icon} />
-              )}
-              <Image
-                style={{
-                  width: size,
-                  height: size,
-                  margin: 20,
-                  borderWidth: 4,
-                  borderColor: isCurrentUser ? "#2ecc71" : borderColor,
-                  borderRadius: 70,
-                }}
-                source={{ uri: player.avatar }}
-              />
-              <Text style={numberStyle}>{index + 1}</Text>
-              <Text style={[styles.info, isCurrentUser && styles.highlightText]}>
-                {player.name}
-              </Text>
-              <Text style={[styles.info, isCurrentUser && styles.highlightText]}>
-                {player.score}
-              </Text>
-            </Animated.View>
-          );
-        })}
+            return (
+              <Animated.View
+                key={player.id}
+                style={[
+                  animatedStyle,
+                  {
+                    opacity: fadeAnim,
+                    transform: [
+                      ...animatedStyle.transform || [],
+                      {
+                        scale: fadeAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.8, 1],
+                        }),
+                      },
+                    ],
+                  },
+                  isCurrentUser ? styles.highlightTopBox : null, // destaque p/ top 3
+                ]}
+              >
+                {index === 0 && (
+                  <AnimatedIcon name="crown" size={18} style={styles.icon} />
+                )}
+                <Image
+                  style={{
+                    width: size,
+                    height: size,
+                    margin: 20,
+                    borderWidth: 4,
+                    borderColor: isCurrentUser ? "#2ecc71" : borderColor,
+                    borderRadius: 70,
+                  }}
+                  source={{ uri: player.avatar }}
+                />
+                <Text style={numberStyle}>{index + 1}</Text>
+                <Text style={[styles.info, isCurrentUser && styles.highlightText]}>
+                  {player.name}
+                </Text>
+                <Text style={[styles.info, isCurrentUser && styles.highlightText]}>
+                  {player.score}
+                </Text>
+              </Animated.View>
+            );
+          })}
         </View>
 
         {/* Demais posições a partir do 4º lugar */}
         <View style={styles.positionsContainer}>
           {rankingData.slice(3).map((player, index) => {
             const isCurrentUser = player.id === currentUserId;
+            const fadeAnim = fadeAnimations[index + 3] || new Animated.Value(1);
 
             // DEBUG opcional
-            console.log("Comparando:", player.id, "com", currentUserId);
+            // console.log("Comparando:", player.id, "com", currentUserId);
 
             return (
-              <View
+              <Animated.View
                 key={player.id}
-                style={[styles.box, isCurrentUser ? styles.highlightBox : null]}
+                style={[
+                  styles.box,
+                  {
+                    opacity: fadeAnim,
+                    transform: [
+                      {
+                        translateY: fadeAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [20, 0],
+                        }),
+                      },
+                    ],
+                  },
+                  isCurrentUser ? styles.highlightBox : null,
+                ]}
               >
                 <View
                   style={[
@@ -212,14 +270,14 @@ useEffect(() => {
                       source={{ uri: player.avatar }}
                     />
                     <Text style={[styles.info, isCurrentUser && styles.highlightText]}>
-                    {player.name}
-                  </Text>
+                      {player.name}
+                    </Text>
                   </View>
                   <Text style={isCurrentUser ? { fontWeight: "bold" } : null}>
                     {player.score}
                   </Text>
                 </View>
-              </View>
+              </Animated.View>
             );
           })}
         </View>
@@ -229,7 +287,6 @@ useEffect(() => {
 };
 
 export default HomeScreen;
-
 
 const styles = StyleSheet.create({
   background: {
@@ -251,36 +308,45 @@ const styles = StyleSheet.create({
   },
   number1: {
     position: "absolute",
-    left: 60,
+    left: 57.5,
     top: 98,
     backgroundColor: "#e5cb26",
     color: "#fff",
-    width: 15,
-    height: 15,
-    paddingLeft: 3,
-    borderRadius: 8,
+    width: 20,
+    height: 20,
+    textAlign: 'center',
+    lineHeight: 20,
+    fontSize: 12,
+    fontWeight: 'bold',
+    borderRadius: 10,
   },
   number2: {
     position: "absolute",
-    left: 49,
+    left: 46,
     top: 80,
     backgroundColor: "#125250",
     color: "#fff",
-    width: 15,
-    height: 15,
-    paddingLeft: 3,
-    borderRadius: 8,
+    width: 20,
+    height: 20,
+    textAlign: 'center',
+    lineHeight: 20,
+    fontSize: 12,
+    fontWeight: 'bold',
+    borderRadius: 10,
   },
   number3: {
     position: "absolute",
-    left: 50,
+    left: 47,
     top: 80,
     backgroundColor: "#125250",
     color: "#fff",
-    width: 15,
-    height: 15,
-    paddingLeft: 3,
-    borderRadius: 8,
+    width: 20,
+    height: 20,
+    textAlign: 'center',
+    lineHeight: 20,
+    fontSize: 12,
+    fontWeight: 'bold',
+    borderRadius: 10,
   },
   info: {
     textAlign: "center",
@@ -313,8 +379,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#cbcdcc",
     marginRight: 5,
   },
- highlightText: {
-  fontWeight: "bold",
-  color: "#000", // garante legibilidade
-},
+  highlightText: {
+    fontWeight: "bold",
+    color: "#000", // garante legibilidade
+  },
 });

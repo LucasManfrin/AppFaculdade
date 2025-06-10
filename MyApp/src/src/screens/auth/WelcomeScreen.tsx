@@ -20,9 +20,17 @@ const Welcome = () => {
 
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(0)).current;
+  const creditsScaleAnim = useRef(new Animated.Value(0)).current;  // NOVO para créditos
 
   useEffect(() => {
     Animated.timing(scaleAnim, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
+
+    // Animação igual para créditos
+    Animated.timing(creditsScaleAnim, {
       toValue: 1,
       duration: 1000,
       useNativeDriver: true,
@@ -49,6 +57,10 @@ const Welcome = () => {
     return () => animation.stop();
   }, [translateY]);
 
+  const handlePress = () => {
+    navigation.navigate('Navigate');
+  };
+
   return (
     <View style={styles.container}>
       <ImageBackground
@@ -59,8 +71,8 @@ const Welcome = () => {
           contentContainerStyle={{ alignItems: "center", paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Créditos primeiro */}
-          <View style={styles.creditsContainer}>
+          {/* Créditos com animação de scale */}
+          <Animated.View style={[styles.creditsContainer, { transform: [{ scale: creditsScaleAnim }] }]}>
             <Text style={styles.creditTitle}>
               FÁBRICA DE SOFTWARE: Desenvolvimento de Websites, Aplicativos e Jogos
             </Text>
@@ -86,7 +98,7 @@ const Welcome = () => {
               style={styles.logoExtensao}
               resizeMode="contain"
             />
-          </View>
+          </Animated.View>
 
           {/* Mensagem original do app */}
           <Animated.Text
@@ -101,9 +113,9 @@ const Welcome = () => {
             Esse é um projeto feito por alunos da Unisagrado, com o intuito de ajudá-los a estudar de uma forma assertiva e descontraída! {"\n"}E aí, bora lá?
           </Animated.Text>
 
-          {/* Botão */}
+          {/* Botão com animação de translateY */}
           <Animated.View style={{ transform: [{ translateY }] }}>
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Navigate')}>
+            <TouchableOpacity style={styles.button} onPress={handlePress}>
               <Text style={styles.buttonText}>Vamos começar</Text>
             </TouchableOpacity>
           </Animated.View>
