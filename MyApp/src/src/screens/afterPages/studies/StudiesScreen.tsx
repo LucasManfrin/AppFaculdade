@@ -1,475 +1,465 @@
-import React, { useState, useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Animated, ScrollView, TouchableOpacity} from 'react-native';
-import { useNavigation } from "@react-navigation/native";
-import { StackNavigationProp } from "@react-navigation/stack";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
-import {
-  widthPercentageToDP as wp,
-  heightPercentageToDP as hp,
-} from "react-native-responsive-screen";
+"use client"
 
+import { useState, useEffect, useRef } from "react"
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  ImageBackground,
+  StatusBar,
+} from "react-native"
+import { useNavigation } from "@react-navigation/native"
+import type { StackNavigationProp } from "@react-navigation/stack"
+import FontAwesome from "@expo/vector-icons/FontAwesome"
+import Ionicons from "@expo/vector-icons/Ionicons"
+import { LinearGradient } from "expo-linear-gradient"
 
 type RootStackParamList = {
-  Studies: undefined;
-  Study1: undefined;
-  Study2: undefined;
+  Studies: undefined
+  Study1: undefined
+  Study2: undefined
   Study3: undefined
-  Study4: undefined;
-  Study5: undefined;
-};
+  Study4: undefined
+  Study5: undefined
+  Study6: undefined
+}
 
- type NavigationProp = StackNavigationProp<RootStackParamList, "Studies">;
- 
+type NavigationProp = StackNavigationProp<RootStackParamList, "Studies">
 
- const totalNumbers = 5;
+const totalModules = 5
 
 const StudiesScreen = () => {
-  
-  const navigation = useNavigation<NavigationProp>();
+  const navigation = useNavigation<NavigationProp>()
+  const scrollViewRef = useRef<ScrollView>(null)
 
-  {/*função para a barra de progresso funcionar responsivamente com os botões */}
+  // Estado para controlar o progresso
   const [currentStep, setCurrentStep] = useState(0)
-  
-    const addPress = () => {
-      if (currentStep < totalNumbers) {
-        setCurrentStep(prev => prev + 1);
-      }
-    };
 
-    const backPress = () => {
-      if ( currentStep > 0) {
-        setCurrentStep(prev => prev - 1);
-      }
+  // Função para adicionar progresso
+  const addProgress = () => {
+    if (currentStep < totalModules) {
+      setCurrentStep((prev) => prev + 1)
     }
-  
-    const progress = currentStep / totalNumbers;
+  }
 
-    {/* animação para suavizar a linha de progresso dos estudos */}
-    const animatedProgress = useRef(new Animated.Value(0)).current;
+  // Função para remover progresso
+  const removeProgress = () => {
+    if (currentStep > 0) {
+      setCurrentStep((prev) => prev - 1)
+    }
+  }
 
-    useEffect(() => {
-      Animated.timing(animatedProgress, {
-        toValue: progress,
-        duration: 350,
-        useNativeDriver: false,
-      }).start();
-    }, [progress]);
+  const progress = currentStep / totalModules
 
-    const progressWidth = animatedProgress.interpolate({
-      inputRange: [0, 1],
-      outputRange: ["0%", "100%"],
-    });
+  // Animação para a barra de progresso
+  const animatedProgress = useRef(new Animated.Value(0)).current
 
+  useEffect(() => {
+    Animated.timing(animatedProgress, {
+      toValue: progress,
+      duration: 500,
+      useNativeDriver: false,
+    }).start()
+  }, [progress])
 
-    {/* aqui se iniciam os useStates, para definirem true or false nos botoes de confirmação daquele estudo */}
+  const progressWidth = animatedProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0%", "100%"],
+  })
 
-    {/* useState do Assunto 1 */}
-  const [checkStudy, setCheckStudy] = useState(true)
-   const [checkStudyPressed, setCheckStudyPressed] =useState(false);
+  // Estados para os checkboxes de cada módulo
+  const [moduleStatus, setModuleStatus] = useState({
+    module1: { completed: false, checked: false },
+    module2: { completed: false, checked: false },
+    module3: { completed: false, checked: false },
+    module4: { completed: false, checked: false },
+    module5: { completed: false, checked: false },
+  })
 
-    { /* useState do Assunto 2 */}
-   const [checkStudy2, setCheckStudy2] = useState(true);
-   const [checkStudyPressed2, setCheckStudyPressed2] = useState(false);
+  // Função para alternar o status de um módulo
+  const toggleModuleStatus = (module: string) => {
+    setModuleStatus((prev) => {
+      const currentStatus = prev[module as keyof typeof prev]
+      const newStatus = {
+        ...prev,
+        [module]: {
+          completed: !currentStatus.completed,
+          checked: !currentStatus.checked,
+        },
+      }
 
-   { /* useState do Assunto 3 */}
-   const [checkStudy3, setCheckStudy3] = useState(true);
-   const [checkStudyPressed3, setCheckStudyPressed3] = useState(false);
+      // Atualiza o progresso geral
+      const completedCount = Object.values(newStatus).filter((status) => status.completed).length
+      setCurrentStep(completedCount)
 
-   {/* useState do Assunto 4 */}
-   const [checkStudy4, setCheckStudy4] = useState(true);
-   const [checkStudyPressed4, setCheckStudyPressed4] = useState(false);
+      return newStatus
+    })
+  }
 
-   {/* useState do Assunto 5 */}
-   const [checkStudy5, setCheckStudy5] = useState(true);
-   const [checkStudyPressed5, setCheckStudyPressed5] = useState(false);
+  // Dados dos módulos
+  const modules = [
+    {
+      id: "module1",
+      number: 1,
+      title: "O que é família?",
+      description:
+        "A família é o primeiro grupo social de uma pessoa, formado por quem cuida, apoia e convive com amor.",
+      image: "https://www.vaticannews.va/content/dam/vaticannews/multimedia/2021/12/26/famiglia.jpg/_jcr_content/renditions/cq5dam.thumbnail.cropped.750.422.jpeg",
+      route: "Study1",
+      color: "#4ECDC4",
+    },
+    {
+      id: "module2",
+      number: 2,
+      title: "Comunicação na Família",
+      description: "Como conversar, ouvir e expressar sentimentos de forma saudável e construtiva.",
+      image: "https://media.gazetadopovo.com.br/sites/2/2021/09/03183211/melhorar-comunicacao-familia-9023dade-660x372.jpg",
+      route: "Study2",
+      color: "#FF6B6B",
+    },
+    {
+      id: "module3",
+      number: 3,
+      title: "Resolvendo Conflitos",
+      description: "Técnicas para resolver desentendimentos de forma saudável e construtiva.",
+      image: "https://wendellcarvalho.com.br/wp-content/uploads/2023/06/resolver-conflitos.jpg",
+      route: "Study3",
+      color: "#FFD166",
+    },
+    {
+      id: "module4",
+      number: 4,
+      title: "Tradições Familiares",
+      description: "A importância de criar e manter tradições que fortalecem os laços familiares.",
+      image: "https://st3.depositphotos.com/35990688/37246/i/450/depositphotos_372464104-stock-photo-portrait-granddaughter-grandmother-preparing-fresh.jpg",
+      route: "Study4",
+      color: "#06D6A0",
+    },
+    {
+      id: "module5",
+      number: 5,
+      title: "Responsabilidades na Família",
+      description: "O papel de cada membro na família e a importância da cooperação.",
+      image: "https://static.wixstatic.com/media/11062b_81a8249190db4e2cb24a06fa44e98831~mv2.jpg/v1/fill/w_568,h_378,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_81a8249190db4e2cb24a06fa44e98831~mv2.jpg",
+      route: "Study5",
+      color: "#118AB2",
+    },
+  ]
 
   return (
     <View style={styles.container}>
-      <ScrollView horizontal = {false}>
-        <Text style={styles.title}>Meus estudos</Text>
-        <View style={styles.studiesContainer}>
-          {/* -------------------Aqui se inicia a box do assunto 1------------------------ */}
+      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
 
-          <View style={[styles.studiesBox]}>
-            <View style={styles.studiesDivision}>
-              <View>
-                <Text
-                  style={{
-                    fontSize: 19,
-                    fontWeight: "bold",
-                    marginBottom: 7,
-                    color: "#606060",
-                  }}
-                >
-                  Assunto 1 de estudo
-                </Text>
-                <Text style={{ marginRight: 60, color: "#404040" }}>
-                  Algum assunto especifico que será lido pelo aluno paraa
-                  melhorar seus conhecimentos que ainda nao foi definido.
-                </Text>
-              </View>
+      {/* <ImageBackground
+        source={{ uri: "https://img.freepik.com/free-vector/abstract-watercolor-pastel-background_87374-139.jpg" }}
+        style={styles.backgroundImage}
+        imageStyle={{ opacity: 0.15 }}
+      > */}
+        <ScrollView
+          ref={scrollViewRef}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>Minha Jornada</Text>
+            <Text style={styles.subtitle}>Aprendendo sobre família</Text>
+          </View>
 
-              <TouchableOpacity
-                style={styles.checkButton}
-                onPress={() => {
-                  setCheckStudyPressed(true);
-                  setCheckStudy(false);
-                  addPress();
-                }}
-              >
-                <Text>
-                  {checkStudy && (
-                    <FontAwesome name="check-circle-o" size={32} color="grey" />
-                  )}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.checkButton}
-                onPress={() => {
-                  setCheckStudyPressed(false);
-                  setCheckStudy(true);
-                  backPress();
-                }}
-              >
-                <Text>
-                  {checkStudyPressed && (
-                    <FontAwesome name="check-circle" size={32} color="green" />
-                  )}
-                </Text>
-              </TouchableOpacity>
+          <View style={styles.progressContainer}>
+            <View style={styles.progressTextContainer}>
+              <Text style={styles.progressText}>
+                Seu progresso: <Text style={styles.progressPercentage}>{Math.round(progress * 100)}%</Text>
+              </Text>
+              <Text style={styles.progressModules}>
+                {currentStep}/{totalModules} módulos
+              </Text>
             </View>
 
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => navigation.navigate("Study1")}
-            >
-              <Text style={styles.buttonText}>Verificar Estudo</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* ---------------Aqui se inicia a box do assunto 2------------------- */}
-          <View style={[styles.studiesBox]}>
-            <View style={styles.studiesDivision}>
-              <View>
-                <Text
-                  style={{
-                    fontSize: 19,
-                    fontWeight: "bold",
-                    marginBottom: 7,
-                    color: "#606060",
-                  }}
-                >
-                  Assunto 2 de estudo
-                </Text>
-                <Text style={{ marginRight: 60, color: "#404040" }}>
-                  Algum assunto especifico que será lido pelo aluno paraa
-                  melhorar seus conhecimentos que ainda nao foi definido.
-                </Text>
+            <View style={styles.progressBarContainer}>
+              <View style={styles.progressBar}>
+                <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
               </View>
-
-              <TouchableOpacity
-                style={styles.checkButton}
-                onPress={() => {
-                  setCheckStudyPressed2(true);
-                  setCheckStudy2(false);
-                  addPress();
-                }}
-              >
-                <Text>
-                  {checkStudy2 && (
-                    <FontAwesome name="check-circle-o" size={32} color="grey" />
-                  )}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.checkButton}
-                onPress={() => {
-                  setCheckStudyPressed2(false);
-                  setCheckStudy2(true);
-                  backPress();
-                }}
-              >
-                <Text>
-                  {checkStudyPressed2 && (
-                    <FontAwesome name="check-circle" size={32} color="green" />
-                  )}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => navigation.navigate("Study2")}
-            >
-              <Text style={styles.buttonText}>Verificar Estudo</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* -----------------Aqui se inicia a box do assunto 3--------------------- */}
-          <View style={[styles.studiesBox]}>
-            <View style={styles.studiesDivision}>
-              <View>
-                <Text
-                  style={{
-                    fontSize: 19,
-                    fontWeight: "bold",
-                    marginBottom: 7,
-                    color: "#606060",
-                  }}
-                >
-                  Assunto 3 de estudo
-                </Text>
-                <Text style={{ marginRight: 60, color: "#404040" }}>
-                  Algum assunto especifico que será lido pelo aluno paraa
-                  melhorar seus conhecimentos que ainda nao foi definido.
-                </Text>
+              <View style={styles.progressMarkers}>
+                {[...Array(totalModules + 1)].map((_, index) => (
+                  <View key={index} style={[styles.marker, index <= currentStep ? styles.markerCompleted : {}]} />
+                ))}
               </View>
-
-              <TouchableOpacity
-                style={styles.checkButton}
-                onPress={() => {
-                  setCheckStudyPressed3(true);
-                  setCheckStudy3(false);
-                  addPress();
-                }}
-              >
-                <Text>
-                  {checkStudy3 && (
-                    <FontAwesome name="check-circle-o" size={32} color="grey" />
-                  )}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.checkButton}
-                onPress={() => {
-                  setCheckStudyPressed3(false);
-                  setCheckStudy3(true);
-                  backPress();
-                }}
-              >
-                <Text>
-                  {checkStudyPressed3 && (
-                    <FontAwesome name="check-circle" size={32} color="green" />
-                  )}
-                </Text>
-              </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => navigation.navigate("Study3")}
-            >
-              <Text style={styles.buttonText}>Verificar Estudo</Text>
-            </TouchableOpacity>
           </View>
 
-          {/* -----------------Aqui se inicia a box do assunto 4--------------------- */}
-          <View style={[styles.studiesBox]}>
-            <View style={styles.studiesDivision}>
-              <View>
-                <Text
-                  style={{
-                    fontSize: 19,
-                    fontWeight: "bold",
-                    marginBottom: 7,
-                    color: "#606060",
-                  }}
+          <View style={styles.modulesContainer}>
+            {modules.map((module, index) => (
+              <View key={module.id} style={styles.moduleWrapper}>
+                <LinearGradient
+                  colors={[module.color, shadeColor(module.color, -20)]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[
+                    styles.moduleCard,
+                    moduleStatus[module.id as keyof typeof moduleStatus].completed ? styles.moduleCardCompleted : {},
+                  ]}
                 >
-                  Assunto 4 de estudo
-                </Text>
-                <Text style={{ marginRight: 60, color: "#404040" }}>
-                  Algum assunto especifico que será lido pelo aluno paraa
-                  melhorar seus conhecimentos que ainda nao foi definido.
-                </Text>
+                  <View style={styles.moduleImageContainer}>
+                    <Image source={{ uri: module.image }} style={styles.moduleImage} resizeMode="cover" />
+                    <View style={styles.moduleNumberContainer}>
+                      <Text style={styles.moduleNumber}>{module.number}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.moduleContent}>
+                    <View style={styles.moduleHeader}>
+                      <Text style={styles.moduleTitle}>{module.title}</Text>
+                      <TouchableOpacity style={styles.checkButton} onPress={() => toggleModuleStatus(module.id)}>
+                        <FontAwesome
+                          name={
+                            moduleStatus[module.id as keyof typeof moduleStatus].checked
+                              ? "check-circle"
+                              : "check-circle-o"
+                          }
+                          size={28}
+                          color={moduleStatus[module.id as keyof typeof moduleStatus].checked ? "#4CAF50" : "#BDBDBD"}
+                        />
+                      </TouchableOpacity>
+                    </View>
+
+                    <Text style={styles.moduleDescription}>{module.description}</Text>
+
+                    <TouchableOpacity
+                      style={styles.studyButton}
+                      onPress={() => navigation.navigate(module.route as keyof RootStackParamList)}
+                    >
+                      <Text style={styles.studyButtonText}>Estudar agora</Text>
+                      <Ionicons name="arrow-forward" size={16} color="#FFF" />
+                    </TouchableOpacity>
+                  </View>
+                </LinearGradient>
               </View>
-
-              <TouchableOpacity
-                style={styles.checkButton}
-                onPress={() => {
-                  setCheckStudyPressed4(true);
-                  setCheckStudy4(false);
-                  addPress();
-                }}
-              >
-                <Text>
-                  {checkStudy4 && (
-                    <FontAwesome name="check-circle-o" size={32} color="grey" />
-                  )}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.checkButton}
-                onPress={() => {
-                  setCheckStudyPressed4(false);
-                  setCheckStudy4(true);
-                  backPress();
-                }}
-              >
-                <Text>
-                  {checkStudyPressed4 && (
-                    <FontAwesome name="check-circle" size={32} color="green" />
-                  )}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => navigation.navigate("Study4")}
-            >
-              <Text style={styles.buttonText}>Verificar Estudo</Text>
-            </TouchableOpacity>
+            ))}
           </View>
 
-          {/* -----------------Aqui se inicia a box do assunto 5--------------------- */}
-          <View style={[styles.studiesBox]}>
-            <View style={styles.studiesDivision}>
-              <View>
-                <Text
-                  style={{
-                    fontSize: 19,
-                    fontWeight: "bold",
-                    marginBottom: 7,
-                    color: "#606060",
-                  }}
-                >
-                  Assunto 5 de estudo
-                </Text>
-                <Text style={{ marginRight: 60, color: "#404040" }}>
-                  Algum assunto especifico que será lido pelo aluno paraa
-                  melhorar seus conhecimentos que ainda nao foi definido.
-                </Text>
-              </View>
 
-              <TouchableOpacity
-                style={styles.checkButton}
-                onPress={() => {
-                  setCheckStudyPressed5(true);
-                  setCheckStudy5(false);
-                  addPress();
-                }}
-              >
-                <Text>
-                  {checkStudy5 && (
-                    <FontAwesome name="check-circle-o" size={32} color="grey" />
-                  )}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.checkButton}
-                onPress={() => {
-                  setCheckStudyPressed5(false);
-                  setCheckStudy5(true);
-                  backPress();
-                }}
-              >
-                <Text>
-                  {checkStudyPressed5 && (
-                    <FontAwesome name="check-circle" size={32} color="green" />
-                  )}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => navigation.navigate("Study5")}
-            >
-              <Text style={styles.buttonText}>Verificar Estudo</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* ------Aqui se inicia a barra de progresso com a porcentagem dos estudos------ */}
-        <View>
-          <Text style={styles.text}>
-            Progresso do estudo: {Math.round(progress * 100)}%
-          </Text>
-
-          <View style={styles.progressBar}>
-            <Animated.View
-              style={[styles.progressLine, { width: progressWidth }]}
-            />
-          </View>
-        </View>
-        
-      </ScrollView>
+        </ScrollView>
+      {/* </ImageBackground> */}
     </View>
-  );
-};
+  )
+}
 
-export default StudiesScreen;
+// Função auxiliar para escurecer ou clarear uma cor
+const shadeColor = (color: string, percent: number) => {
+  let R = Number.parseInt(color.substring(1, 3), 16)
+  let G = Number.parseInt(color.substring(3, 5), 16)
+  let B = Number.parseInt(color.substring(5, 7), 16)
+
+  R = Math.floor((R * (100 + percent)) / 100)
+  G = Math.floor((G * (100 + percent)) / 100)
+  B = Math.floor((B * (100 + percent)) / 100)
+
+  R = R < 255 ? R : 255
+  G = G < 255 ? G : 255
+  B = B < 255 ? B : 255
+
+  R = R > 0 ? R : 0
+  G = G > 0 ? G : 0
+  B = B > 0 ? B : 0
+
+  const RR = R.toString(16).length === 1 ? "0" + R.toString(16) : R.toString(16)
+  const GG = G.toString(16).length === 1 ? "0" + G.toString(16) : G.toString(16)
+  const BB = B.toString(16).length === 1 ? "0" + B.toString(16) : B.toString(16)
+
+  return "#" + RR + GG + BB
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "flex-start",
-    alignItems: "center",
-    backgroundColor: "#cafaef"
+    backgroundColor: "#fff",
+  },
+  backgroundImage: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  header: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   title: {
-    alignSelf: "flex-start",
-    marginVertical: 60,
-    fontSize: 23,
+    fontSize: 32,
     fontWeight: "bold",
-    color: "grey",
+    color: "#333",
+    marginBottom: 5,
   },
-  studiesContainer: {
-    gap: 50,
-  },
-  studiesBox: {
-    width: wp("75%"),
-    borderRadius: 10,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    alignSelf: "center",
-  },
-  studiesDivision: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    margin: 10
-  },
-  button: {
-    alignItems: "center",
-  },
-  buttonText: {
-    textAlign: "center",
+  subtitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#2b6864",
+    color: "#666",
+    marginBottom: 20,
   },
-  checkButton: {
+  progressContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 30,
+  },
+  progressTextContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    position: "absolute",
-    right: wp("5%")
+    marginBottom: 10,
   },
-  text: {
-    alignSelf: "flex-start",
+  progressText: {
     fontSize: 16,
+    color: "#555",
+    fontWeight: "500",
+  },
+  progressPercentage: {
     fontWeight: "bold",
-    color: "grey",
-    marginVertical: 25,
+    color: "#447f78",
+  },
+  progressModules: {
+    fontSize: 14,
+    color: "#777",
+  },
+  progressBarContainer: {
+    marginBottom: 10,
   },
   progressBar: {
-    height: 8,
-    width: wp("85%"),
-    backgroundColor: "#BEBEBE",
-    borderRadius: 15,
+    height: 10,
+    backgroundColor: "#E0E0E0",
+    borderRadius: 10,
     overflow: "hidden",
-    marginBottom: 215,
   },
-  progressLine: {
+  progressFill: {
     height: "100%",
-    backgroundColor: "green",
+    backgroundColor: "#447f78",
+    borderRadius: 10,
   },
-});
+  progressMarkers: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 2,
+    marginTop: 5,
+  },
+  marker: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#E0E0E0",
+  },
+  markerCompleted: {
+    backgroundColor: "#447f78",
+  },
+  modulesContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 100
+  },
+  moduleWrapper: {
+    marginBottom: 20,
+    borderRadius: 16,
+    overflow: "hidden",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  moduleCard: {
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#FFF",
+  },
+  moduleCardCompleted: {
+    opacity: 0.9,
+  },
+  moduleImageContainer: {
+    position: "relative",
+    height: 120,
+  },
+  moduleImage: {
+    width: "100%",
+    height: "100%",
+  },
+  moduleNumberContainer: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  moduleNumber: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  moduleContent: {
+    padding: 16,
+  },
+  moduleHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  moduleTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#FFF",
+    flex: 1,
+  },
+  checkButton: {
+    padding: 5,
+  },
+  moduleDescription: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.9)",
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  studyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+  },
+  studyButtonText: {
+    color: "#FFF",
+    fontWeight: "600",
+    marginRight: 8,
+  },
+  quizButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FF8C00",
+    marginHorizontal: 20,
+    marginTop: 20,
+    paddingVertical: 15,
+    borderRadius: 12,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  quizButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 18,
+    marginLeft: 10,
+  },
+})
+
+export default StudiesScreen

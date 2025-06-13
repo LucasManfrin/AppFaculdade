@@ -123,8 +123,8 @@ export default function QuizIntro() {
             </View>
 
             <View style={styles.infoItem}>
-              <FontAwesome5 name="clock" size={20} style={styles.infoIcon} />
-              <Text style={styles.infoText}>Seu tempo será registrado, então tente responder rapidamente</Text>
+              <FontAwesome5 name="medal" size={20} style={styles.infoIcon} />
+              <Text style={styles.infoText}>Quem acertar mais perguntas no menor tempo terá a melhor colocação!</Text>
             </View>
 
             <View style={styles.infoItem}>
@@ -136,6 +136,7 @@ export default function QuizIntro() {
               <FontAwesome5 name="random" size={20} style={styles.infoIcon} />
               <Text style={styles.infoText}>As perguntas e respostas são aleatórias a cada tentativa</Text>
             </View>
+
           </View>
 
           <TouchableOpacity style={styles.startButton} onPress={handleStartQuiz} disabled={loading}>

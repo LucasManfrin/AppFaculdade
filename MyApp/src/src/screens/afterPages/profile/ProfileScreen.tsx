@@ -47,7 +47,7 @@ const ProfileScreen = () => {
             setRightAnswers(data.acertos || 0);
             setQuizDate(data.data || "");
             setQuizTime(data.tempo || 0);
-            setTotalQuestions(5);
+            setTotalQuestions(10); // mude o total de questoes aqui 
           }
         }
       } catch (error) {
@@ -79,10 +79,10 @@ const ProfileScreen = () => {
   const desempenho = totalQuestions > 0 ? rightAnswers / totalQuestions : 0;
 
   let desempenhoTexto = "";
-  if (rightAnswers <= 1) desempenhoTexto = "Você pode melhorar. Continue praticando!";
-  else if (rightAnswers <= 2) desempenhoTexto = "Bom começo! Com mais prática, \nvocê vai melhorar ainda mais.";
-  else if (rightAnswers <= 3) desempenhoTexto = "Está indo bem, mas ainda há espaço para aprimorar!";
-  else if (rightAnswers <= 4) desempenhoTexto = "Ótimo desempenho! Continue assim!";
+  if (rightAnswers <= 2) desempenhoTexto = "Você pode melhorar. Continue praticando!";
+  else if (rightAnswers <= 4) desempenhoTexto = "Bom começo! Com mais prática, \nvocê vai melhorar ainda mais.";
+  else if (rightAnswers <= 6) desempenhoTexto = "Está indo bem, mas ainda há espaço para aprimorar!";
+  else if (rightAnswers <= 8) desempenhoTexto = "Ótimo desempenho! Continue assim!";
   else desempenhoTexto = "Parabéns! Você alcançou a nota máxima, excelente trabalho!";
 
   const handleEditPress = () => setIsEditing(true);

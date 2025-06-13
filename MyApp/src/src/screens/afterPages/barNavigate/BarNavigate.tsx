@@ -40,7 +40,7 @@ const BarNavigate = () => {
             position: "absolute",
             bottom: Platform.OS === "ios" ? 5 : 30,
             elevation: 0,
-            marginBottom: 20,
+            marginBottom: 10,
             marginHorizontal: 10,
             height: 54,
             borderRadius: 28,
